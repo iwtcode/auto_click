@@ -37,6 +37,10 @@ class Log:
     def success(message):
         Log.print(message, Log.GREEN)
 
+    @staticmethod
+    def cls():
+        os.system('cls' if os.name=='nt' else 'clear')
+
 class AutoClickAPI:
     def __init__(self, email: str = None, password: str = None, timeout: int = None, filename: str = 'options.txt'):
         if email and password:
@@ -135,10 +139,6 @@ class AutoClickAPI:
         args = parser.parse_args()
         return args
 
-    @staticmethod
-    def cls():
-        os.system('cls' if os.name=='nt' else 'clear')
-
 if __name__ == '__main__':
     '''
     Запустите программу с аргументами в CLI:
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     '''
 
     args = AutoClickAPI.get_args()
-    AutoClickAPI.cls()
+    Log.cls()
     if args.login and args.password:
         api = AutoClickAPI(args.login, args.password, timeout=args.timeout)
     else:
