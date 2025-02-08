@@ -2,7 +2,7 @@ import os, aiohttp, asyncio, argparse
 from bs4 import BeautifulSoup
 from time import sleep, strftime, localtime
 
-def get_current_time():
+def current_time():
     return strftime("%Y-%m-%d %H:%M:%S", localtime())
 
 class AutoClickAPI:
@@ -47,14 +47,14 @@ class AutoClickAPI:
                         if text == '1':
                             async with session.get(f'{CABINET}?login=yes') as response:
                                 response.raise_for_status()
-                                print(f'[{get_current_time()}] login: успешная авторизация')
+                                print(f'[{current_time()}] login: успешная авторизация')
                                 return True
                         else:
-                            print(f'[{get_current_time()}] login: ошибка при авторизации')
+                            print(f'[{current_time()}] login: ошибка при авторизации')
                             return False
         except Exception as e:
-            print(f'[{get_current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
-            print(f'[{get_current_time()}] login: timeout {self.timeout} перед следующей попыткой авторизации')
+            print(f'[{current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
+            print(f'[{current_time()}] login: timeout {self.timeout} перед следующей попыткой авторизации')
             sleep(self.timeout)
             return False
 
@@ -73,7 +73,7 @@ class AutoClickAPI:
                         response.raise_for_status()
                         text = await response.text()
                         if text == ERR_MSG:
-                            print(f'[{get_current_time()}] auto_click: срок сессии истёк')
+                            print(f'[{current_time()}] auto_click: срок сессии истёк')
                             response = False
                             while not response:
                                 response = await self.login()
@@ -85,14 +85,13 @@ class AutoClickAPI:
 
                         for lesson_id in knop_ids:
                             async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
-                                text = await response.text()
-                                print(f'[{get_current_time()}] auto_click: отправлен запрос для начала занятия по id: {lesson_id}')
+                                print(f'[{current_time()}] auto_click: отправлен запрос для начала занятия по id: {lesson_id}')
                         else:
-                            print(f'[{get_current_time()}] auto_click: нет активных занятий')
+                            print(f'[{current_time()}] auto_click: нет активных занятий')
             except Exception as e:
-                print(f'[{get_current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
+                print(f'[{current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
             finally:
-                print(f'[{get_current_time()}] auto_click: timeout {self.timeout} секунд перед следующим циклом')
+                print(f'[{current_time()}] auto_click: timeout {self.timeout} секунд перед следующим циклом')
                 sleep(self.timeout)
 
     @staticmethod
