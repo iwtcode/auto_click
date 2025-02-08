@@ -2,8 +2,40 @@ import os, aiohttp, asyncio, argparse
 from bs4 import BeautifulSoup
 from time import sleep, strftime, localtime
 
-def current_time():
-    return strftime("%Y-%m-%d %H:%M:%S", localtime())
+class Log:
+    BLACK   = '\x1b[0;90m'
+    RED     = '\x1b[0;91m'
+    GREEN   = '\x1b[0;92m'
+    YELLOW  = '\x1b[0;93m'
+    BLUE    = '\x1b[0;94m'
+    PURPLE  = '\x1b[0;95m'
+    CYAN    = '\x1b[0;96m'
+    WHITE   = '\x1b[0;97m'
+    RESET   = '\x1b[0m'
+    
+    @staticmethod
+    def print(str, color):
+        print(f'{color}[{Log.current_time()}] {str}{Log.RESET}')
+
+    @staticmethod
+    def current_time():
+        return strftime("%H:%M:%S", localtime())
+
+    @staticmethod
+    def info(message):
+        Log.print(message, Log.WHITE)
+
+    @staticmethod
+    def error(message):
+        Log.print(message, Log.RED)
+
+    @staticmethod
+    def warning(message):
+        Log.print(message, Log.YELLOW)
+
+    @staticmethod
+    def success(message):
+        Log.print(message, Log.GREEN)
 
 class AutoClickAPI:
     def __init__(self, email: str = None, password: str = None, timeout: int = None, filename: str = 'options.txt'):
@@ -47,14 +79,14 @@ class AutoClickAPI:
                         if text == '1':
                             async with session.get(f'{CABINET}?login=yes') as response:
                                 response.raise_for_status()
-                                print(f'[{current_time()}] login: успешная авторизация')
+                                Log.success('login: успешная авторизация')
                                 return True
                         else:
-                            print(f'[{current_time()}] login: ошибка при авторизации')
+                            Log.error('login: ошибка при авторизации')
                             return False
         except Exception as e:
-            print(f'[{current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
-            print(f'[{current_time()}] login: timeout {self.timeout} перед следующей попыткой авторизации')
+            Log.error(f'auto_click: ошибка при подключении | {type(e).__name__} {e}')
+            Log.info(f'login: timeout {self.timeout} перед следующей попыткой авторизации')
             sleep(self.timeout)
             return False
 
@@ -73,7 +105,7 @@ class AutoClickAPI:
                         response.raise_for_status()
                         text = await response.text()
                         if text == ERR_MSG:
-                            print(f'[{current_time()}] auto_click: срок сессии истёк')
+                            Log.warning('auto_click: срок сессии истёк')
                             response = False
                             while not response:
                                 response = await self.login()
@@ -85,13 +117,13 @@ class AutoClickAPI:
 
                         for lesson_id in knop_ids:
                             async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
-                                print(f'[{current_time()}] auto_click: отправлен запрос для начала занятия по id: {lesson_id}')
+                                Log.info(f'auto_click: отправлен запрос для начала занятия по id: {lesson_id}')
                         else:
-                            print(f'[{current_time()}] auto_click: нет активных занятий')
+                            Log.info('auto_click: нет активных занятий')
             except Exception as e:
-                print(f'[{current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
+                Log.error(f'auto_click: ошибка при подключении | {type(e).__name__} {e}')
             finally:
-                print(f'[{current_time()}] auto_click: timeout {self.timeout} секунд перед следующим циклом')
+                Log.info(f'auto_click: timeout {self.timeout} секунд перед следующим циклом')
                 sleep(self.timeout)
 
     @staticmethod
