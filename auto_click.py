@@ -1,6 +1,9 @@
-import os, re, aiohttp, asyncio, argparse
+import os, aiohttp, asyncio, argparse
 from bs4 import BeautifulSoup
-from time import sleep
+from time import sleep, strftime, localtime
+
+def get_current_time():
+    return strftime("%Y-%m-%d %H:%M:%S", localtime())
 
 class AutoClickAPI:
     def __init__(self, email: str = None, password: str = None, timeout: int = None, filename: str = 'options.txt'):
@@ -18,7 +21,7 @@ class AutoClickAPI:
                         key, value = clean_line.split('=', 1)
                         options[key.strip()] = value.strip()
             except FileNotFoundError:
-                raise FileNotFoundError(f"Файл конфигурации '{filename}' не найден.")
+                raise FileNotFoundError(f"Файл конфигурации '{filename}' не найден")
 
             if 'login' not in options or 'password' not in options:
                 raise ValueError("Укажите в файле конфигурации параметры 'login' и 'password'")
@@ -34,7 +37,7 @@ class AutoClickAPI:
         CABINET = 'https://lk.sut.ru/cabinet/'
 
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(10)) as session:
                 async with session.get(f'{CABINET}?login=no') as response:
                     response.raise_for_status()
                     self.cookies = response.cookies
@@ -44,13 +47,15 @@ class AutoClickAPI:
                         if text == '1':
                             async with session.get(f'{CABINET}?login=yes') as response:
                                 response.raise_for_status()
-                                print('login: успешная авторизация')
+                                print(f'[{get_current_time()}] login: успешная авторизация')
                                 return True
                         else:
-                            print('login: ошибка при авторизации')
+                            print(f'[{get_current_time()}] login: ошибка при авторизации')
                             return False
         except Exception as e:
-            print('login: ошибка при подключении')
+            print(f'[{get_current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
+            print(f'[{get_current_time()}] login: timeout {self.timeout} перед следующей попыткой авторизации')
+            sleep(self.timeout)
             return False
 
     async def auto_click(self):
@@ -63,12 +68,12 @@ class AutoClickAPI:
 
         while True:
             try:
-                async with aiohttp.ClientSession() as session:
+                async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(10)) as session:
                     async with session.get(URL, cookies=self.cookies) as response:
                         response.raise_for_status()
                         text = await response.text()
                         if text == ERR_MSG:
-                            print('auto_click: срок сессии истёк')
+                            print(f'[{get_current_time()}] auto_click: срок сессии истёк')
                             response = False
                             while not response:
                                 response = await self.login()
@@ -76,18 +81,18 @@ class AutoClickAPI:
 
                         soup = BeautifulSoup(text, 'html.parser')
                         week = soup.find("h3").text.split("№")[1].split()[0]
-                        knop_ids = tuple(map(lambda x: x["id"][4:], soup.find_all("span", {"id": re.compile(r"knop+")})))
+                        knop_ids = tuple(x['id'][4:] for x in soup.find_all('span') if x.get('id', '').startswith('knop'))
 
                         for lesson_id in knop_ids:
                             async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
                                 text = await response.text()
-                                print(f'auto_click: отправлен запрос для начала занятия по id: {lesson_id}')
+                                print(f'[{get_current_time()}] auto_click: отправлен запрос для начала занятия по id: {lesson_id}')
                         else:
-                            print('auto_click: нет активных занятий')
+                            print(f'[{get_current_time()}] auto_click: нет активных занятий')
             except Exception as e:
-                print('auto_click: ошибка при подключении')
+                print(f'[{get_current_time()}] auto_click: ошибка при подключении | {type(e).__name__} {e}')
             finally:
-                print(f'auto_click: timeout {self.timeout} секунд перед следующим циклом')
+                print(f'[{get_current_time()}] auto_click: timeout {self.timeout} секунд перед следующим циклом')
                 sleep(self.timeout)
 
     @staticmethod
@@ -114,7 +119,7 @@ if __name__ == '__main__':
         password=your_password # Пароль для автопосещения
 
         # Опциональные параметры
-        timeout=60             # Задержка перед следующей проверкой занятий (в секундах)        
+        timeout=60             # Задержка перед следующей проверкой занятий (в секундах)
     '''
 
     args = AutoClickAPI.get_args()
