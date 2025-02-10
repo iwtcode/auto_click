@@ -119,9 +119,18 @@ class AutoClickAPI:
                         week = soup.find("h3").text.split("№")[1].split()[0]
                         knop_ids = tuple(x['id'][4:] for x in soup.find_all('span') if x.get('id', '').startswith('knop'))
 
+                        with open('get.html', 'w', encoding='utf-8') as f:
+                            f.write(text)
+
                         for lesson_id in knop_ids:
                             async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
-                                Log.info(f'auto_click: отправлен запрос для начала занятия по id: {lesson_id}')
+                                text = await response.text()
+                                with open('post.html', 'w', encoding='utf-8') as f:
+                                    f.write(text)
+                                if text == '':
+                                    Log.info(f'auto_click: занятие с id: {lesson_id} ещё не началось')
+                                else:
+                                    Log.success(f'auto_click: удалось начать занятие с id: {lesson_id}')
                         else:
                             Log.info('auto_click: нет активных занятий')
             except Exception as e:
