@@ -83,14 +83,14 @@ class AutoClickAPI:
                         if text == '1':
                             async with session.get(f'{CABINET}?login=yes') as response:
                                 response.raise_for_status()
-                                Log.success('login: успешная авторизация')
+                                Log.success('успешная авторизация')
                                 return True
                         else:
-                            Log.error('login: ошибка при авторизации')
+                            Log.error('ошибка при авторизации')
                             return False
         except Exception as e:
-            Log.error(f'auto_click: ошибка при подключении | {type(e).__name__} {e}')
-            Log.info(f'login: timeout {self.timeout} перед следующей попыткой авторизации')
+            Log.error(f'ошибка при подключении | {type(e).__name__} {e}')
+            Log.info(f'timeout {self.timeout} перед следующей попыткой авторизации')
             sleep(self.timeout)
             return False
 
@@ -109,7 +109,7 @@ class AutoClickAPI:
                         response.raise_for_status()
                         text = await response.text()
                         if text == ERR_MSG:
-                            Log.warning('auto_click: срок сессии истёк')
+                            Log.warning('срок сессии истёк')
                             response = False
                             while not response:
                                 response = await self.login()
@@ -118,20 +118,20 @@ class AutoClickAPI:
                         soup = BeautifulSoup(text, 'html.parser')
                         week = soup.find("h3").text.split("№")[1].split()[0]
                         knop_ids = tuple(x['id'][4:] for x in soup.find_all('span') if x.get('id', '').startswith('knop'))
-
-                        for lesson_id in knop_ids:
-                            async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
-                                text = await response.text()
-                                if text == '':
-                                    Log.info(f'auto_click: занятие с id: {lesson_id} ещё не началось')
-                                else:
-                                    Log.success(f'auto_click: удалось начать занятие с id: {lesson_id}')
+                        if knop_ids:
+                            for lesson_id in knop_ids:
+                                async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
+                                    text = await response.text()
+                                    if text == '':
+                                        Log.info(f'занятие с id: {lesson_id} ещё не началось')
+                                    else:
+                                        Log.success(f'удалось начать занятие с id: {lesson_id}')
                         else:
-                            Log.info('auto_click: нет активных занятий')
+                            Log.info('нет активных занятий')
             except Exception as e:
-                Log.error(f'auto_click: ошибка при подключении | {type(e).__name__} {e}')
+                Log.error(f'ошибка при подключении | {type(e).__name__} {e}')
             finally:
-                Log.info(f'auto_click: timeout {self.timeout} секунд перед следующим циклом')
+                Log.info(f'timeout {self.timeout} секунд перед следующим циклом')
                 sleep(self.timeout)
 
     @staticmethod
