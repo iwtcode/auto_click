@@ -1,4 +1,4 @@
-import os, aiohttp, asyncio, argparse
+import os, json, aiohttp, asyncio, argparse
 from bs4 import BeautifulSoup
 from time import sleep, strftime, localtime
 
@@ -122,10 +122,11 @@ class AutoClickAPI:
                             for lesson_id in knop_ids:
                                 async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
                                     text = await response.text()
-                                    if text == '':
-                                        Log.info(f'занятие с id: {lesson_id} ещё не началось')
-                                    else:
+                                    text = json.loads(text) if text != '' else text
+                                    if 'id' in text:
                                         Log.success(f'удалось начать занятие с id: {lesson_id}')
+                                    else:
+                                        Log.warning(f'занятие с id: {lesson_id} ещё не началось')
                         else:
                             Log.info('нет активных занятий')
             except Exception as e:
