@@ -1,4 +1,4 @@
-import os, json, aiohttp, asyncio, argparse
+import os, aiohttp, asyncio, argparse
 from bs4 import BeautifulSoup
 from time import sleep, strftime, localtime
 
@@ -117,16 +117,15 @@ class AutoClickAPI:
 
                         soup = BeautifulSoup(text, 'html.parser')
                         week = soup.find("h3").text.split("№")[1].split()[0]
-                        knop_ids = tuple(x['id'][4:] for x in soup.find_all('span') if x.get('id', '').startswith('knop'))
+                        knop_ids = tuple(x['id'][4:] for x in soup.find_all('span') if x.get('id', '').startswith('knop') and x.text == 'Начать занятие')
                         if knop_ids:
                             for lesson_id in knop_ids:
                                 async with session.post(f'{URL}?open=1&rasp={lesson_id}&week={week}', cookies=self.cookies) as response:
                                     text = await response.text()
-                                    text = json.loads(text) if text != '' else text
-                                    if 'id' in text:
+                                    if text != '':
                                         Log.success(f'удалось начать занятие с id: {lesson_id}')
                                     else:
-                                        Log.warning(f'занятие с id: {lesson_id} ещё не началось')
+                                        Log.info(f'занятие с id: {lesson_id} ещё не началось')
                         else:
                             Log.info('нет активных занятий')
             except Exception as e:
